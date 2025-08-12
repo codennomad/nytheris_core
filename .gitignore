@@ -1,0 +1,45 @@
+# --- Segredos ---
+# Nunca cometer arquivos com senhas, tokens ou chaves de API.
+.env
+*.env
+
+# --- Ambientes Virtuais ---
+# Ignora a pasta do ambiente virtual do Python.
+venv/
+env/
+.venv/
+
+# --- Caches e Arquivos Compilados do Python ---
+# Ignora os arquivos de bytecode gerados pelo interpretador Python.
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# --- Logs ---
+# Ignora logs gerados pela aplicação em tempo de execução.
+logs/
+*.log
+
+# --- Dependências e Build ---
+# Ignora pastas de build e distribuição de pacotes.
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# --- Arquivos de IDE / Editor ---
+# Ignora configurações específicas do workspace do Visual Studio Code e outros.
+.vscode/
+.idea/
+
+# --- Arquivos de Sistema Operacional ---
+# Ignora arquivos de metadados do macOS e do Windows.
+.DS_Store
+Thumbs.db
+
+# --- Testes ---
+# Ignora arquivos e pastas relacionados a testes e cobertura de código.
+.pytest_cache/
+.coverage
+htmlcov/

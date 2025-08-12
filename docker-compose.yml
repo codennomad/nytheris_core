@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # Nosso serviço de API FastAPI
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./Backend:/app/Backend  # Mapeia nosso código para dentro do contêiner para o --reload funcionar
+    env_file:
+      - ./.env
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+
+  # Serviço do Banco de Dados PostgreSQL
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env
+    ports:
+      - "5432:5432"
+
+  # Serviço do Cache Redis
+  redis:
+    image: redis:7-alpine
+
+  # Serviço de Mensageria RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    ports:
+      - "5672:5672"   # Porta do RabbitMQ
+      - "15672:15672" # Porta da Interface de Gerenciamento Web
+
+volumes:
+  postgres_data:
