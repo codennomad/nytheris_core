@@ -14,8 +14,8 @@ logger.add(
 logger.add(
     "logs/error.log",
     level="ERROR",
-    rotation="25 MB"
-    retention="15 days"
+    rotation="25 MB",
+    retention="15 days",
     format="{time} {level} {message}",
     serialize=True
 )

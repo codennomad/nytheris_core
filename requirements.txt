@@ -8,3 +8,5 @@ python-dotenv
 loguru
 httpx
 discord.py
+passlib[bcrypt]
+pika

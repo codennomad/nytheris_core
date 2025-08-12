@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   # Nosso serviço de API FastAPI
@@ -7,7 +6,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./Backend:/app/Backend  # Mapeia nosso código para dentro do contêiner para o --reload funcionar
+      - .:/app  # Mapeia nosso código para dentro do contêiner para o --reload funcionar
     env_file:
       - ./.env
     depends_on:
@@ -35,6 +34,24 @@ services:
     ports:
       - "5672:5672"   # Porta do RabbitMQ
       - "15672:15672" # Porta da Interface de Gerenciamento Web
+
+
+  worker:
+    build: .
+    command: ["python", "-u", "worker.py"] # -u desabilita o buffer de output para vermos os logs em tempo real
+    env_file:
+      - ./.env
+    depends_on:
+      - db
+      - rabbitmq
+
+  discord_bot:
+    build: .
+    command: ["python", "-u", "discord_bot.py"]
+    env_file:
+      - ./.env
+    depends_on:
+      - db
 
 volumes:
   postgres_data:
