@@ -10,3 +10,6 @@ httpx
 discord.py
 passlib[bcrypt]
 pika
+pytest
+pytest-cov
+flake8

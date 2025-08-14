@@ -1,64 +1,55 @@
-"""
-URL Shouter API Routes.
+# Backend/routes/url.py
 
-This module defines the APi endpoints for creating and managingn shortened URLs.
-"""
 import secrets
 import string
-from fastapi import APIRouter, HTTPException, status, Depends 
+from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session 
+from sqlalchemy.orm import Session
 from redis import Redis
 
-from Backend.models.models import URLBase, URLPasswordRequest 
-
-from Backend.models.models import URL
+# Importa as classes necessárias diretamente do seu arquivo de modelos
+from Backend.models.models import URL, URLBase, URLPasswordRequest
 from Backend.core.database import get_db
 from Backend.core.cache import get_cache
 from Backend.core.logger import log
 from Backend.core import security
 from Backend.core.messaging import publish_click_event
-
+from Backend.core.alerter import send_alert
 
 router = APIRouter(
     tags=["URL Shortener"],
     prefix="/api/v1"
 )
 
-db_url = {}
-
-def generate_unique_short_code(length: int = 6) -> str:
-    """Generate a random, unique Short code."""
-    character = string.ascii_letters + string.digits
+def generate_unique_short_code(db: Session, length: int = 7) -> str:
+    """
+    Generates a random, unique short code by checking the database.
+    """
+    characters = string.ascii_letters + string.digits
     while True:
-        short_code = "".join(secrets.choice(character) for _ in range(length))
-        if short_code not in db_url:
+        short_code = "".join(secrets.choice(characters) for _ in range(length))
+        # Verifica no banco de dados para garantir que o código é único
+        if not db.query(URL).filter(URL.short_code == short_code).first():
             return short_code
-        
-        
+
 @router.post("/shorten", status_code=status.HTTP_201_CREATED)
 def create_short_url(url_data: URLBase, db: Session = Depends(get_db)):
     """
-    Creates a new shortened URL.
-    
-    Receives a long URL, generate a unique short code, stores the mapping,
-    and returns the shortened URl.
+    Creates a new shortened URL, with options for a custom alias,
+    password protection, and click limits.
     """
     try:
         short_code: str
         if url_data.custom_alias:
-            # --- LÓGICA PARA APELIDO CUSTOMIZADO ---
             log.info(f"Custom alias provided: '{url_data.custom_alias}'")
-            # 1. Verificar se o apelido já está em uso
-            existing_url = db.query(url_model.URL).filter(url_model.URL.short_code == url_data.custom_alias).first()
+            # Verifica se o apelido customizado já está em uso
+            existing_url = db.query(URL).filter(URL.short_code == url_data.custom_alias).first()
             if existing_url:
                 log.warning(f"Custom alias '{url_data.custom_alias}' already exists.")
-                # O código de status HTTP 409 Conflict é perfeito para isso.
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Custom alias already in use.")
             short_code = url_data.custom_alias
         else:
-            # --- LÓGICA PADRÃO (FALLBACK) ---
-            # Se nenhum apelido for fornecido, gere um aleatório.
+            # Se nenhum apelido for fornecido, gera um código aleatório
             short_code = generate_unique_short_code(db)
             log.info(f"Generated random short code: '{short_code}'")
 
@@ -67,7 +58,7 @@ def create_short_url(url_data: URLBase, db: Session = Depends(get_db)):
             hashed_password = security.hash_password(url_data.password)
             log.info(f"Password provided for '{short_code}'. Hashing it.")
 
-        db_url = url_model.URL(
+        db_url = URL(
             original_url=url_data.url,
             short_code=short_code,
             password=hashed_password,
@@ -77,9 +68,16 @@ def create_short_url(url_data: URLBase, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(db_url)
 
+        # Envia um alerta sobre a nova URL criada
+        alert_message = (
+            f"**Código:** `{short_code}`\n"
+            f"**Destino:** `{db_url.original_url}`\n"
+            f"**Expira em:** `{db_url.max_clicks or 'Nunca'}` cliques"
+        )
+        send_alert(title="✅ Nova URL Criada", message=alert_message, level="INFO")
+
         base_url = "http://localhost:8000"
         shortened_url = f"{base_url}/r/{short_code}"
-
         return { "message": "URL shortened successfully!", "short_url": shortened_url }
 
     except HTTPException as http_exc:
@@ -89,7 +87,6 @@ def create_short_url(url_data: URLBase, db: Session = Depends(get_db)):
         log.error(f"Error creating short URL: {e}")
         db.rollback()
         raise HTTPException(status_code=500, detail="Internal Server Error")
-    
 
 @router.get("/r/{short_code}")
 def redirect_to_original_url(
@@ -98,10 +95,9 @@ def redirect_to_original_url(
 ):
     """
     Redirects to the original URL after checking business rules.
-    On success, it publishes a click event to RabbitMQ instead of
-    updating the counter directly.
+    On success, it publishes a click event to RabbitMQ.
     """
-    db_url = db.query(url_model.URL).filter(url_model.URL.short_code == short_code).first()
+    db_url = db.query(URL).filter(URL.short_code == short_code).first()
 
     if not db_url:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="URL not found")
@@ -109,6 +105,11 @@ def redirect_to_original_url(
     # --- LÓGICA DE VERIFICAÇÃO ---
     if db_url.max_clicks > 0 and db_url.current_clicks >= db_url.max_clicks:
         log.warning(f"URL '{short_code}' has reached its click limit.")
+        send_alert(
+            title="🚫 URL Expirada",
+            message=f"O link com o código `{short_code}` atingiu o seu limite de `{db_url.max_clicks}` cliques e foi desativado.",
+            level="WARNING"
+        )
         raise HTTPException(status_code=410, detail="URL has expired")
 
     if db_url.password:
@@ -116,7 +117,6 @@ def redirect_to_original_url(
         raise HTTPException(status_code=401, detail="Password required to access this URL")
 
     # --- LÓGICA DE PUBLICAÇÃO ASSÍNCRONA ---
-    # Em vez de 'db.commit()', publicamos o evento.
     if publish_click_event(short_code):
         log.info(f"Click event for '{short_code}' published successfully.")
     else:
@@ -135,7 +135,7 @@ def verify_password_and_get_url(
     Verifies the password for a protected URL. On success, it publishes
     a click event and returns the original URL.
     """
-    db_url = db.query(url_model.URL).filter(url_model.URL.short_code == short_code).first()
+    db_url = db.query(URL).filter(URL.short_code == short_code).first()
 
     if not db_url:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="URL not found")
@@ -151,7 +151,6 @@ def verify_password_and_get_url(
         raise HTTPException(status_code=status.HTTP_410_GONE, detail="URL has expired")
 
     # --- LÓGICA DE PUBLICAÇÃO ASSÍNCRONA ---
-    # Se tudo passou, publicamos o evento em vez de incrementar o clique aqui.
     if publish_click_event(short_code):
         log.info(f"Password verified for '{short_code}'. Publishing click event.")
     else:
