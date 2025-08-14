@@ -34,7 +34,7 @@ async def on_ready():
 )
 async def stats(
     ctx: discord.ApplicationContext,
-    short_code: Option(str, "The short code of the URL to check.", required=True)
+    short_code: Option(str, description="The short code of the URL to check.", required=True)
 ):
     """Fetches and displays stats for a given short code."""
     await ctx.defer() # Confirma o recebimento do comando para evitar timeout
