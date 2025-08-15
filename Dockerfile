@@ -14,6 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copia o script do worker para o diretório de trabalho /app
 COPY worker.py .
 COPY discord_bot.py .
+COPY telegram_bot.py .
 
 # Copie todo o código da nossa aplicação
 COPY ./Backend /app/Backend

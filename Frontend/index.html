@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Encurtador de Links</title>
+    <link rel="stylesheet" href="style/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Vamos Encurtar!</h1>
+        </header>
+
+        <main>
+            <form id="shorten-form">
+                <div class="input-group">
+                    <input type="url" id="url-input" placeholder="Cole sua URL longa aqui..." required>
+                    <button type="submit" id="submit-button">GO!</button>
+                </div>
+                <div class="options-toggle" id="options-toggle">Opções Avançadas ↓</div>
+                <div class="advanced-options" id="advanced-options">
+                    <div class="form-field">
+                        <label for="custom-alias">Apelido Customizado (Opcional)</label>
+                        <input type="text" id="custom-alias" placeholder="ex: meu-link-secreto">
+                    </div>
+                    <div class="form-field">
+                        <label for="password">Senha (Opcional)</label>
+                        <input type="password" id="password" placeholder="Proteja seu link">
+                    </div>
+                    <div class="form-field">
+                        <label for="max-clicks">Destruir após X cliques (0 = ilimitado)</label>
+                        <input type="number" id="max-clicks" min="0" value="0">
+                    </div>
+                </div>
+            </form>
+
+            <div id="result-section" class="result-section hidden">
+                <h2>Seu link encurtado:</h2>
+                <div class="result-display">
+                    <input type="text" id="short-url-output" readonly>
+                    <button id="copy-button">Copiar</button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Criado com FastAPI & Docker</p>
+        </footer>
+    </div>
+    <script src="js/script.js"></script>
+</body>
+</html>

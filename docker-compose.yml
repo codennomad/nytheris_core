@@ -53,5 +53,13 @@ services:
     depends_on:
       - db
 
+  telegram_bot:
+    build: .
+    command: ["python", "-u", "telegram_bot.py"]
+    env_file:
+      - ./.env
+    depends_on:
+      - rabbitmq
+
 volumes:
   postgres_data:

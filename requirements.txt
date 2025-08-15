@@ -8,7 +8,9 @@ python-dotenv
 loguru
 httpx
 discord.py
-passlib[bcrypt]
+py-cord
+passlib==1.7.4
+bcrypt==4.0.1
 pika
 pytest
 pytest-cov

@@ -13,7 +13,7 @@ from Backend.core.database import get_db
 from Backend.core.cache import get_cache
 from Backend.core.logger import log
 from Backend.core import security
-from Backend.core.messaging import publish_click_event
+from Backend.core.messaging import publish_message
 from Backend.core.alerter import send_alert
 
 router = APIRouter(
@@ -76,7 +76,7 @@ def create_short_url(url_data: URLBase, db: Session = Depends(get_db)):
         )
         send_alert(title="✅ Nova URL Criada", message=alert_message, level="INFO")
 
-        base_url = "http://localhost:8000"
+        base_url = "http://host.docker.internal:8000"
         shortened_url = f"{base_url}/r/{short_code}"
         return { "message": "URL shortened successfully!", "short_url": shortened_url }
 
@@ -117,7 +117,7 @@ def redirect_to_original_url(
         raise HTTPException(status_code=401, detail="Password required to access this URL")
 
     # --- LÓGICA DE PUBLICAÇÃO ASSÍNCRONA ---
-    if publish_click_event(short_code):
+    if publish_message(short_code):
         log.info(f"Click event for '{short_code}' published successfully.")
     else:
         log.error(f"FAILED to publish click event for '{short_code}'.")
@@ -151,7 +151,7 @@ def verify_password_and_get_url(
         raise HTTPException(status_code=status.HTTP_410_GONE, detail="URL has expired")
 
     # --- LÓGICA DE PUBLICAÇÃO ASSÍNCRONA ---
-    if publish_click_event(short_code):
+    if publish_message(short_code):
         log.info(f"Password verified for '{short_code}'. Publishing click event.")
     else:
         log.error(f"FAILED to publish click event for '{short_code}' after password verification.")
