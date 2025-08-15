@@ -1,5 +1,3 @@
-# .github/workflows/ci.yml
-
 name: Continuous Integration Pipeline
 
 on:
@@ -31,24 +29,35 @@ jobs:
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
+      - name: Create .env file for Docker
+        run: |
+            echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> .env
+            echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
+            echo "POSTGRES_SERVER=${{ secrets.POSTGRES_SERVER }}" >> .env
+            echo "POSTGRES_PORT=${{ secrets.POSTGRES_PORT }}" >> .env
+            echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" >> .env
+            echo "REDIS_HOST=${{ secrets.REDIS_HOST }}" >> .env
+            echo "REDIS_PORT=${{ secrets.REDIS_PORT }}" >> .env
+            echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
+            echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env
+            echo "TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}" >> .env
+            echo "DISCORD_BOT_TOKEN=${{ secrets.DISCORD_BOT_TOKEN }}" >> .env
+            echo "DISCORD_CHANNEL_ID=${{ secrets.DISCORD_CHANNEL_ID }}" >> .env
+            echo "DISCORD_GUILD_ID=${{ secrets.DISCORD_GUILD_ID }}" >> .env
+            echo "RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}" >> .env
+
       - name: Build and run Docker services
-        # CORREÇÃO: Usando 'docker compose' (com espaço)
         run: docker compose up --build -d
 
       - name: Wait for services
         run: sleep 15
 
       - name: Run database migrations
-        # CORREÇÃO: Usando 'docker compose' (com espaço)
         run: docker compose exec -T api alembic upgrade head
 
       - name: Run Pytest
-        # CORREÇÃO: Usando 'docker compose' (com espaço)
         run: docker compose exec -T api pytest --cov=Backend
 
       - name: Stop Docker services
         if: always()
-        # CORREÇÃO: Usando 'docker compose' (com espaço)
-        run: |
-            touch .env
-            docker compose down
+        run: docker compose down
