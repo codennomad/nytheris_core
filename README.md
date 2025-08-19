@@ -1,7 +1,7 @@
 # Nytheris Core - Encurtador de Links 🚀
 
 <p align="center">
-  <img alt="Status da CI" src="https://github.com/SEU_USUARIO/SEU_REPOSITORIO/actions/workflows/ci.yml/badge.svg">
+  <img alt="Status da CI" src="https://github.com/codennomad/nytheris_core/actions/workflows/ci.yml/badge.svg">
   <img alt="Python Version" src="https://img.shields.io/badge/python-3.11-blue.svg">
   <img alt="Framework" src="https://img.shields.io/badge/Framework-FastAPI-green.svg">
   <img alt="License" src="https://img.shields.io/badge/Licen%C3%A7a-MIT-blue.svg">
